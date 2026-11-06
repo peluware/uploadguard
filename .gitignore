@@ -1,0 +1,7 @@
+target/
+test/fixtures/
+.idea/
+*.iml
+
+# Claude Code, por máquina
+.claude/settings.local.json

@@ -1,0 +1,7 @@
+FROM python:3.13-slim
+# curl runs here, not on the host: reaching the proxy through a published port depends on the
+# Docker port forwarder, which is flaky on Windows and is not part of what the suite tests.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir boto3

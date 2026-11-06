@@ -1,0 +1,23 @@
+# Throwaway single-node storage for the integration test. Not a production config.
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+
+replication_factor = 1
+consistency_mode = "consistent"
+
+# The config file comes from a bind mount, so its permissions cannot be tightened here.
+allow_world_readable_secrets = true
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "d2c8d0d4a5e64e8bb8f2a2a1c3b4d5e6f70819283a4b5c6d7e8f90a1b2c3d4e5"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage.localhost"
+
+[admin]
+api_bind_addr = "[::]:3903"
+admin_token = "dGVzdC1hZG1pbi10b2tlbi1ub3QtYS1zZWNyZXQ="

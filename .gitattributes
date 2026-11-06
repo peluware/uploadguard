@@ -1,0 +1,10 @@
+# Los scripts de Linux y los ficheros de configuración tienen que llegar con LF, o fallan con
+# "bash: \r: command not found" tras un clone en Windows.
+* text=auto eol=lf
+
+# Los batch de Windows sí quieren CRLF
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+*.jar  binary
+*.png  binary

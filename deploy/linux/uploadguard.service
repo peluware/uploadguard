@@ -1,0 +1,42 @@
+[Unit]
+Description=UploadGuard - validates upload magic bytes before they reach the storage backend
+Documentation=file:/opt/uploadguard/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=uploadguard
+Group=uploadguard
+WorkingDirectory=/opt/uploadguard
+EnvironmentFile=/opt/uploadguard/.env
+
+# allowRestrictedHeaders=host is required: the proxy has to forward the client's Host header
+# untouched, and that is the host the presigned signature was computed over.
+ExecStart=/usr/bin/java -Djdk.httpclient.allowRestrictedHeaders=host -Xmx256m -jar /opt/uploadguard/uploadguard.jar
+
+Restart=always
+RestartSec=2
+
+# Nothing is kept on disk: only the first 8 KB of each body are held in memory.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=uploadguard
+
+[Install]
+WantedBy=multi-user.target
