@@ -1,15 +1,12 @@
 # Detrás de un reverse proxy
 
-Todo lo de aquí salió de ponerlo en producción, y casi todo costó un rato de depuración. Está
-organizado como síntoma → causa → arreglo, que es como lo vas a necesitar.
-
-El proxy en sí es agnóstico: valida que el cuerpo sea lo que dice su `Content-Type` y reenvía. Lo que
-complica el despliegue es el hop de delante.
+Condiciones que debe cumplir el hop situado delante del servicio, y diagnóstico de los fallos que se
+producen cuando no se cumplen. Organizado como síntoma, causa y corrección.
 
 ## Config completa de nginx
 
-Un solo dominio público, enrutado por método: lo que puede traer cuerpo pasa por UploadGuard, el resto
-va directo al backend. No hay un segundo hostname que cerrar.
+Un único host público con enrutado por método: los verbos que pueden llevar cuerpo atraviesan
+UploadGuard y el resto alcanza el backend directamente. No existe una segunda ruta que restringir.
 
 ```
                      ┌──► uploadguard ──► backend     (PUT, POST, PATCH)
@@ -53,12 +50,13 @@ location / {
 }
 ```
 
-Los `upstream` con nombre no son decorativos: `proxy_pass` con una variable normalmente exige un
-`resolver` para hacer DNS en caliente, pero si el valor coincide con el nombre de un `upstream`
-declarado, nginx lo resuelve internamente. Sin ellos, `502`.
+Los bloques `upstream` con nombre son necesarios: `proxy_pass` con una variable exige un `resolver`
+para resolución DNS en tiempo de petición, salvo que el valor coincida con el nombre de un `upstream`
+declarado, en cuyo caso nginx lo resuelve internamente. Sin ellos la respuesta es `502`.
 
-Si usas un panel que genera el `location` por ti (BunkerWeb y similares), **desactiva esa opción** para
-ese servicio. Dos `location /` en el mismo server y nginx no arranca.
+Si un panel de administración genera el `location` a partir de sus propios ajustes, esa opción debe
+desactivarse para el servicio. Dos `location /` en el mismo bloque `server` impiden el arranque de
+nginx.
 
 ---
 
@@ -114,7 +112,7 @@ termina. Un archivo de 60 MB se sube completo antes de recibir el `415`.
 corra el content handler. Eso hace `proxy_request_buffering off` inefectivo en cualquier `location`
 donde ModSecurity esté activo.
 
-**Lo que NO lo arregla**, y lo comprobamos:
+**Alternativas que no corrigen el comportamiento:**
 
 - `SecRequestBodyLimit` + `SecRequestBodyLimitAction ProcessPartial` — controlan cuánto **inspecciona**
   ModSecurity, no si nginx bufferiza.
@@ -154,9 +152,9 @@ distinguir "el archivo no es lo que dice" de "se cayó la red". El preflight sí
 **Causa:** el `OPTIONS` del preflight lo contesta el backend, que tiene su CORS configurado. Pero el
 `415` lo genera **UploadGuard**, y las cabeceras CORS del backend nunca llegan a esa respuesta.
 
-**Arreglo:** ya está en el código. `Http.reply` refleja el `Origin` de la petición en
-`Access-Control-Allow-Origin`, con `Vary: Origin`, en las respuestas que generamos nosotros. Expone
-únicamente esa línea de texto, a alguien que tuvo que estar autorizado para llegar ahí.
+**Corrección:** implementada en el servicio. `Http.reply` refleja el `Origin` de la petición en
+`Access-Control-Allow-Origin`, con `Vary: Origin`, en las respuestas que emite. La exposición se limita
+a esa línea de texto, ante un emisor que requirió autorización para alcanzar el endpoint.
 
 ---
 
@@ -176,7 +174,7 @@ respuesta que ya tiene. Si cerráramos sin más, TCP manda un `RST` que **descar
 cliente tenía en vuelo. Se ajusta con `lingering_timeout` y `lingering_time`, pero acortarlo trae de
 vuelta el riesgo del reset.
 
-Si el `415` llega bien, no toques nada de eso.
+Si el `415` alcanza al cliente correctamente, estos parámetros no requieren ajuste.
 
 ---
 
@@ -184,8 +182,9 @@ Si el `415` llega bien, no toques nada de eso.
 
 **Síntoma:** un archivo pequeño que no coincide da `415`; uno grande da `502`.
 
-**Causa:** al rechazar, descartamos hasta `MAX_DRAIN` (1 MiB) de lo que queda del cuerpo y cerramos. Si
-queda más, nginx sigue escribiendo, ve el upstream cerrado y lo traduce a `502`.
+**Causa:** ante un rechazo el servicio descarta hasta `MAX_DRAIN` (1 MiB) del cuerpo restante y cierra
+la conexión. Si resta más, nginx continúa escribiendo, detecta el upstream cerrado y lo traduce a
+`502`.
 
 **El objeto no se guarda en ninguno de los dos casos.** Lo que se degrada es que el cliente vea el
 motivo. Subir `MAX_DRAIN` en `UploadHandler` amplía el rango en que se ve el `415`, a cambio de leer y
@@ -195,8 +194,8 @@ tirar más bytes de una subida que ya sabemos mala.
 
 ## Multipart
 
-`UploadPart` es un **`PUT`**, así que con enrutado por método las partes pasan por aquí sin que
-configures nada.
+`UploadPart` emplea el método `PUT`, de modo que con enrutado por método las partes atraviesan el
+servicio sin configuración adicional.
 
 Y una parte no es un archivo: si la primera trae cabecera de PNG y va declarada
 `application/octet-stream`, se detecta `image/png`, no coinciden, y sale `415`.
@@ -211,6 +210,6 @@ Si habilitas multipart, saca las partes del enrutado por el query param que las 
 `test/run-tests.sh --edge` levanta nginx delante con esta misma config y repasa las 71 pruebas con
 firmas reales: claves con `//`, `%20`, tildes y ñ, 20 MB en streaming, rechazos por contenido.
 
-**Lo que no cubre:** el cliente de pruebas habla **HTTP/1.1**. El bug del `Host` vacío solo existe con
-HTTP/2, así que la suite pasó en verde con la configuración equivocada. Si tocas el manejo del `Host`,
-pruébalo con un navegador de verdad.
+**Fuera de cobertura:** el cliente de pruebas emplea HTTP/1.1. El fallo del `Host` vacío solo se
+manifiesta bajo HTTP/2, por lo que la suite se completa sin errores con la configuración incorrecta.
+Cualquier cambio en el tratamiento del `Host` requiere verificación con un agente de usuario real.
