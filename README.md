@@ -204,6 +204,14 @@ Docker y Python.
 `ContentInspector` no realiza E/S, lo que permite verificar las reglas de correspondencia de forma
 aislada.
 
+## Licencia
+
+Apache License 2.0. Ver [LICENSE](LICENSE) y [NOTICE](NOTICE).
+
+Las dependencias empaquetadas en el jar son permisivas: Apache-2.0 (`tika-core`, `commons-io`,
+`commons-secure-xml`), BSD-2-Clause (`commonmark`) y MIT (`slf4j`). El artefacto incluye la licencia y
+un `META-INF/NOTICE` con las atribuciones fusionadas de los componentes Apache.
+
 ## Limitaciones
 
 - La verificación cubre el prefijo del cuerpo, no su totalidad. Un archivo con cabecera válida seguida

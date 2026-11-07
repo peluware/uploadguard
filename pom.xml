@@ -68,6 +68,15 @@
                                     <mainClass>com.peluware.uploadguard.UploadGuard</mainClass>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- Shade keeps the first file it finds for a duplicated path and drops the
+                                     rest, which silently discards the attribution notices of the bundled
+                                     Apache-licensed components. These two merge them instead. -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <projectName>UploadGuard</projectName>
+                                    <organizationName>PeluWare</organizationName>
+                                    <organizationURL>https://github.com/peluware</organizationURL>
+                                    <inceptionYear>2026</inceptionYear>
+                                </transformer>
                             </transformers>
                             <filters>
                                 <filter>
