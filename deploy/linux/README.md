@@ -7,7 +7,16 @@ Requisitos: JDK 21+ en el servidor. Maven no hace falta ahí.
 
 ## 1. Instalar
 
-Construye el jar donde tengas Maven:
+Descarga `uploadguard-<version>-linux.zip` de las
+[releases](https://github.com/peluware/uploadguard/releases) y descomprímelo en `/opt`, que ya contiene
+el directorio `uploadguard/` con el jar y los scripts:
+
+```bash
+unzip uploadguard-1.0.0-linux.zip -d /opt
+bash /opt/uploadguard/install.sh
+```
+
+Y continúa en el paso 2. Para construirlo tú mismo en vez de descargarlo:
 
 ```bash
 mvn clean package

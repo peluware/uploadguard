@@ -12,6 +12,12 @@ Requisitos: JDK 21+ en el PATH.
 
 ## 1. Dejar los ficheros en su sitio
 
+Descarga `uploadguard-<version>-windows.zip` de las
+[releases](https://github.com/peluware/uploadguard/releases) y descomprímelo donde quieras instalarlo;
+el zip contiene el directorio `uploadguard\` con el jar y los scripts. Luego continúa en el paso 2.
+
+Para construirlo tú mismo en vez de descargarlo:
+
 ```bat
 mvn clean package
 ```
